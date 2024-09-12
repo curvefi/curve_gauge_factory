@@ -730,8 +730,8 @@ def recover_remaining(_reward_token: address):
     assert period_finish < block.timestamp
     assert self.reward_data[_reward_token].last_update >= period_finish
 
-    self.claim_data[self.reward_data[_reward_token].distributor][_reward_token] +=\
-        self.reward_remaining[_reward_token] << 128
+    assert ERC20(_reward_token).transfer(self.reward_data[_reward_token].distributor,
+        self.reward_remaining[_reward_token], default_return_value=True)
     self.reward_remaining[_reward_token] = 0
 
 
