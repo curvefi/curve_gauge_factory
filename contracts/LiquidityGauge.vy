@@ -328,7 +328,7 @@ def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _r
             self.reward_data[token].last_update = last_update
 
             rate: uint256 = self.reward_data[token].rate
-            excess: uint256 = self.reward_remaining[token] - (period_finish - last_update) * rate
+            excess: uint256 = self.reward_remaining[token] - (period_finish - last_update + duration) * rate
             integral_change: uint256 = (duration * rate + excess) * 10**18 / _total_supply
             integral += integral_change
             self.reward_data[token].integral = integral
@@ -709,7 +709,7 @@ def deposit_reward_token(_reward_token: address, _amount: uint256, _epoch: uint2
     )
     amount_received = ERC20(_reward_token).balanceOf(self) - amount_received
 
-    total_amount: uint256 = amount_received + self.reward_remaining[_reward_token]
+    total_amount: uint256 = self.reward_remaining[_reward_token] + amount_received
     self.reward_data[_reward_token].rate = total_amount / _epoch
     self.reward_remaining[_reward_token] = total_amount
 
