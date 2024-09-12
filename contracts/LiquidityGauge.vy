@@ -132,6 +132,7 @@ inflation_params: uint256
 # For tracking external rewards
 reward_count: public(uint256)
 reward_data: public(HashMap[address, Reward])
+reward_remaining: public(HashMap[address, uint256])  # fixes bad precision
 
 # claimant -> default reward receiver
 rewards_receiver: public(HashMap[address, address])
@@ -319,13 +320,21 @@ def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _r
         token: address = self.reward_tokens[i]
 
         integral: uint256 = self.reward_data[token].integral
-        last_update: uint256 = min(block.timestamp, self.reward_data[token].period_finish)
+        period_finish: uint256 = self.reward_data[token].period_finish
+        last_update: uint256 = min(block.timestamp, period_finish)
         duration: uint256 = last_update - self.reward_data[token].last_update
 
         if duration != 0 and _total_supply != 0:
             self.reward_data[token].last_update = last_update
-            integral += duration * self.reward_data[token].rate * 10**18 / _total_supply
+
+            rate: uint256 = self.reward_data[token].rate
+            excess: uint256 = self.reward_remaining[token] - (period_finish - last_update) * rate
+            integral_change: uint256 = (duration * rate + excess) * 10**18 / _total_supply
+            integral += integral_change
             self.reward_data[token].integral = integral
+            # There is still calculation error in user's claimable amount,
+            # but it has 18-decimal precision through LP(_total_supply) – safe
+            self.reward_remaining[token] -= integral_change * _total_supply / 10**18
 
         if _user != empty(address):
             integral_for: uint256 = self.reward_integral_for[token][_user]
@@ -683,9 +692,10 @@ def deposit_reward_token(_reward_token: address, _amount: uint256, _epoch: uint2
     @notice Deposit a reward token for distribution
     @param _reward_token The reward token being deposited
     @param _amount The amount of `_reward_token` being deposited
-    @param _epoch The duration the rewards are distributed across.
+    @param _epoch The duration the rewards are distributed across. Between 3 days and a year, week by default
     """
     assert msg.sender == self.reward_data[_reward_token].distributor
+    assert 3 * WEEK / 7 <= _epoch and _epoch <= WEEK * 4 * 12, "Epoch duration"
 
     self._checkpoint_rewards(empty(address), self.totalSupply, False, empty(address))
 
@@ -699,18 +709,30 @@ def deposit_reward_token(_reward_token: address, _amount: uint256, _epoch: uint2
     )
     amount_received = ERC20(_reward_token).balanceOf(self) - amount_received
 
-    period_finish: uint256 = self.reward_data[_reward_token].period_finish
-    assert amount_received > _epoch  # dev: rate will tend to zero!
-
-    if block.timestamp >= period_finish:
-        self.reward_data[_reward_token].rate = amount_received / _epoch
-    else:
-        remaining: uint256 = period_finish - block.timestamp
-        leftover: uint256 = remaining * self.reward_data[_reward_token].rate
-        self.reward_data[_reward_token].rate = (amount_received + leftover) / _epoch
+    total_amount: uint256 = amount_received + self.reward_remaining[_reward_token]
+    self.reward_data[_reward_token].rate = total_amount / _epoch
+    self.reward_remaining[_reward_token] = total_amount
 
     self.reward_data[_reward_token].last_update = block.timestamp
     self.reward_data[_reward_token].period_finish = block.timestamp + _epoch
+
+
+@external
+def recover_remaining(_reward_token: address):
+    """
+    @notice Recover reward token remaining after calculation errors. Helpful for small decimal tokens.
+    Remaining tokens will be claimable in favor of distributor. Callable by anyone after reward distribution finished.
+    @param _reward_token The reward token being recovered
+    """
+    self._checkpoint_rewards(empty(address), self.totalSupply, False, empty(address))
+
+    period_finish: uint256 = self.reward_data[_reward_token].period_finish
+    assert period_finish < block.timestamp
+    assert self.reward_data[_reward_token].last_update >= period_finish
+
+    self.claim_data[self.reward_data[_reward_token].distributor][_reward_token] +=\
+        self.reward_remaining[_reward_token] << 128
+    self.reward_remaining[_reward_token] = 0
 
 
 @external
