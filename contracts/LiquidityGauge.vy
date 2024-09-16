@@ -239,15 +239,16 @@ def _checkpoint(addr: address):
 
     rate: uint256 = inflation_params % 2 ** 216
     new_rate: uint256 = rate
+
+    # New mining epoch started, time to update inflation parameters
+    if block.timestamp >= prev_future_epoch:
+        future_epoch_time_write: uint256 = CRV20(CRV).future_epoch_time_write()
+        new_rate = CRV20(CRV).rate()
+        self.inflation_params = (future_epoch_time_write << 216) + new_rate
+
     if gauge_is_killed:
         rate = 0
         new_rate = 0
-
-    if prev_future_epoch >= _period_time:
-        future_epoch_time_write: uint256 = CRV20(CRV).future_epoch_time_write()
-        if not gauge_is_killed:
-            new_rate = CRV20(CRV).rate()
-        self.inflation_params = (future_epoch_time_write << 216) + new_rate
 
     # Update integral of 1/supply
     if block.timestamp > _period_time:
@@ -266,7 +267,7 @@ def _checkpoint(addr: address):
                     # of the first epoch until it ends, and then the rate of
                     # the last epoch.
                     # If more than one epoch is crossed - the gauge gets less,
-                    # but that'd meen it wasn't called for more than 1 year
+                    # but that'd mean it wasn't called for more than 1 year
                     _integrate_inv_supply += rate * w * (prev_future_epoch - prev_week_time) / _working_supply
                     rate = new_rate
                     _integrate_inv_supply += rate * w * (week_time - prev_future_epoch) / _working_supply
