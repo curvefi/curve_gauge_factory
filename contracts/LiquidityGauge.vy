@@ -94,6 +94,7 @@ VERSION: constant(String[8]) = "v6.1.1"  # <- updated from v6.0.0 (makes rewards
 
 EIP712_TYPEHASH: constant(bytes32) = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
 EIP2612_TYPEHASH: constant(bytes32) = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
+ERC1271_MAGIC_VAL: constant(bytes32) = 0x1626ba7e00000000000000000000000000000000000000000000000000000000
 
 VERSION_HASH: constant(bytes32) = keccak256(VERSION)
 NAME_HASH: immutable(bytes32)
@@ -239,15 +240,16 @@ def _checkpoint(addr: address):
 
     rate: uint256 = inflation_params % 2 ** 216
     new_rate: uint256 = rate
+
+    # New mining epoch started, time to update inflation parameters
+    if block.timestamp >= prev_future_epoch:
+        future_epoch_time_write: uint256 = CRV20(CRV).future_epoch_time_write()
+        new_rate = CRV20(CRV).rate()
+        self.inflation_params = (future_epoch_time_write << 216) + new_rate
+
     if gauge_is_killed:
         rate = 0
         new_rate = 0
-
-    if prev_future_epoch >= _period_time:
-        future_epoch_time_write: uint256 = CRV20(CRV).future_epoch_time_write()
-        if not gauge_is_killed:
-            new_rate = CRV20(CRV).rate()
-        self.inflation_params = (future_epoch_time_write << 216) + new_rate
 
     # Update integral of 1/supply
     if block.timestamp > _period_time:
@@ -266,7 +268,7 @@ def _checkpoint(addr: address):
                     # of the first epoch until it ends, and then the rate of
                     # the last epoch.
                     # If more than one epoch is crossed - the gauge gets less,
-                    # but that'd meen it wasn't called for more than 1 year
+                    # but that'd mean it wasn't called for more than 1 year
                     _integrate_inv_supply += rate * w * (prev_future_epoch - prev_week_time) / _working_supply
                     rate = new_rate
                     _integrate_inv_supply += rate * w * (week_time - prev_future_epoch) / _working_supply
@@ -579,7 +581,11 @@ def permit(
             ),
         )
     )
-    assert ecrecover(digest, _v, _r, _s) == _owner  # dev: invalid signature
+    if _owner.is_contract:
+        sig: Bytes[65] = concat(_abi_encode(_r, _s), slice(convert(_v, bytes32), 31, 1))
+        assert ERC1271(_owner).isValidSignature(digest, sig) == ERC1271_MAGIC_VAL  # dev: invalid signature
+    else:
+        assert ecrecover(digest, _v, _r, _s) == _owner  # dev: invalid signature
 
     self.allowance[_owner][_spender] = _value
     self.nonces[_owner] = unsafe_add(nonce, 1)
