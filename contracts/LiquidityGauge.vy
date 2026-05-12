@@ -129,7 +129,7 @@ symbol: public(String[40])
 nonces: public(HashMap[address, uint256])
 
 # Gauge
-factory: public(address)
+factory: public(Factory)
 manager: public(address)
 lp_token: public(address)
 
@@ -182,7 +182,7 @@ def __init__(_lp_token: address):
     @param _lp_token Liquidity Pool contract address
     """
     self.lp_token = _lp_token
-    self.factory = msg.sender
+    self.factory = Factory(msg.sender)
     self.manager = tx.origin
     log SetGaugeManager(tx.origin)
 
@@ -674,7 +674,7 @@ def set_gauge_manager(_gauge_manager: address):
         method, but only for the gauge which they are the manager of.
     @param _gauge_manager The account to set as the new manager of the gauge.
     """
-    assert msg.sender in [self.manager, Factory(self.factory).admin()]  # dev: only manager or factory admin
+    assert msg.sender in [self.manager, self.factory.admin()]  # dev: only manager or factory admin
 
     self.manager = _gauge_manager
     log SetGaugeManager(_gauge_manager)
@@ -737,7 +737,7 @@ def add_reward(_reward_token: address, _distributor: address):
     @param _reward_token The token to add as an additional reward
     @param _distributor Address permitted to fund this contract with the reward token
     """
-    assert msg.sender in [self.manager, Factory(self.factory).admin()]  # dev: only manager or factory admin
+    assert msg.sender in [self.manager, self.factory.admin()]  # dev: only manager or factory admin
     assert _distributor != empty(address)  # dev: distributor cannot be zero address
 
     reward_count: uint256 = self.reward_count
@@ -760,7 +760,7 @@ def set_reward_distributor(_reward_token: address, _distributor: address):
     """
     current_distributor: address = self.reward_data[_reward_token].distributor
 
-    assert msg.sender in [current_distributor, Factory(self.factory).admin(), self.manager]
+    assert msg.sender in [current_distributor, self.factory.admin(), self.manager]
     assert current_distributor != empty(address)
     assert _distributor != empty(address)
 
@@ -775,7 +775,7 @@ def set_killed(_is_killed: bool):
     @dev When killed, the gauge always yields a rate of 0 and so cannot mint CRV
     @param _is_killed Killed status to set
     """
-    assert msg.sender == Factory(self.factory).admin()  # dev: only owner
+    assert msg.sender == self.factory.admin()  # dev: only owner
 
     self.is_killed = _is_killed
     log SetKilled(_is_killed)
