@@ -107,11 +107,8 @@ EIP712_TYPEHASH: constant(bytes32) = keccak256("EIP712Domain(string name,string 
 EIP2612_TYPEHASH: constant(bytes32) = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)")
 ERC1271_MAGIC_VAL: constant(bytes32) = 0x1626ba7e00000000000000000000000000000000000000000000000000000000
 
-VERSION_HASH: constant(bytes32) = keccak256(VERSION)
-NAME_HASH: immutable(bytes32)
-CACHED_CHAIN_ID: immutable(uint256)
 salt: public(immutable(bytes32))
-CACHED_DOMAIN_SEPARATOR: immutable(bytes32)
+DOMAIN_SEPARATOR: public(immutable(bytes32))
 
 CRV: constant(address) = 0xD533a949740bb3306d119CC777fa900bA034cd52
 GAUGE_CONTROLLER: constant(address) = 0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB
@@ -201,39 +198,17 @@ def __init__(_lp_token: address):
         + CRV20(CRV).rate()
     )
 
-    NAME_HASH = keccak256(name)
     salt = block.prevhash
-    CACHED_CHAIN_ID = chain.id
-    CACHED_DOMAIN_SEPARATOR = keccak256(
+    DOMAIN_SEPARATOR = keccak256(
         _abi_encode(
             EIP712_TYPEHASH,
-            NAME_HASH,
-            VERSION_HASH,
+            keccak256(name),
+            keccak256(VERSION),
             chain.id,
             self,
             salt,
         )
     )
-
-
-# Internal Functions
-
-@view
-@internal
-def _domain_separator() -> bytes32:
-    if chain.id != CACHED_CHAIN_ID:
-        return keccak256(
-            _abi_encode(
-                EIP712_TYPEHASH,
-                NAME_HASH,
-                VERSION_HASH,
-                chain.id,
-                self,
-                salt,
-            )
-        )
-    return CACHED_DOMAIN_SEPARATOR
-
 
 @internal
 def _checkpoint(addr: address):
@@ -587,7 +562,7 @@ def permit(
     digest: bytes32 = keccak256(
         concat(
             b"\x19\x01",
-            self._domain_separator(),
+            DOMAIN_SEPARATOR,
             keccak256(
                 _abi_encode(
                     EIP2612_TYPEHASH, _owner, _spender, _value, nonce, _deadline
@@ -900,11 +875,3 @@ def version() -> String[8]:
     """
     return VERSION
 
-
-@view
-@external
-def DOMAIN_SEPARATOR() -> bytes32:
-    """
-    @notice EIP712 domain separator.
-    """
-    return self._domain_separator()
