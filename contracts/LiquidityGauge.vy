@@ -131,7 +131,7 @@ nonces: public(HashMap[address, uint256])
 # Gauge
 factory: public(Factory)
 manager: public(address)
-lp_token: public(address)
+lp_token: public(immutable(ERC20))
 
 is_killed: public(bool)
 
@@ -181,7 +181,7 @@ def __init__(_lp_token: address):
     @notice Contract constructor
     @param _lp_token Liquidity Pool contract address
     """
-    self.lp_token = _lp_token
+    lp_token = ERC20(_lp_token)
     self.factory = Factory(msg.sender)
     self.manager = tx.origin
     log SetGaugeManager(tx.origin)
@@ -423,7 +423,7 @@ def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool =
 
         self._update_liquidity_limit(_addr, new_balance, total_supply)
 
-        ERC20(self.lp_token).transferFrom(msg.sender, self, _value)
+        lp_token.transferFrom(msg.sender, self, _value)
 
         log Deposit(_addr, _value)
         log Transfer(empty(address), _addr, _value)
@@ -454,7 +454,7 @@ def withdraw(_value: uint256, _claim_rewards: bool = False, _receiver: address =
 
         self._update_liquidity_limit(msg.sender, new_balance, total_supply)
 
-        ERC20(self.lp_token).transfer(_receiver, _value)
+        lp_token.transfer(_receiver, _value)
 
         log Withdraw(msg.sender, _value)
         log Transfer(msg.sender, empty(address), _value)
