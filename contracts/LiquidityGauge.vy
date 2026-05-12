@@ -56,12 +56,6 @@ event UpdateLiquidityLimit:
     working_balance: uint256
     working_supply: uint256
 
-event CommitOwnership:
-    admin: address
-
-event ApplyOwnership:
-    admin: address
-
 event AddReward:
     reward: indexed(address)
     index: uint256
