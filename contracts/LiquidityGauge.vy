@@ -149,7 +149,7 @@ rewards_receiver: public(HashMap[address, address])
 # reward token -> claiming address -> integral
 reward_integral_for: public(HashMap[address, HashMap[address, uint256]])
 
-# user -> [uint128 claimable amount][uint128 claimed amount]
+# user -> token -> [uint128 claimable amount][uint128 claimed amount]
 claim_data: HashMap[address, HashMap[address, uint256]]
 
 working_balances: public(HashMap[address, uint256])
@@ -213,8 +213,7 @@ def __init__(_lp_token: address):
 @internal
 def _checkpoint(addr: address):
     """
-    @notice Checkpoint for a user
-    @dev Updates the CRV emissions a user is entitled to receive
+    @notice Checkpoint a user calculating their CRV entitlement
     @param addr User address
     """
     _period: int128 = self.period
@@ -347,9 +346,7 @@ def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _r
 @internal
 def _update_liquidity_limit(addr: address, l: uint256, L: uint256):
     """
-    @notice Calculate limits which depend on the amount of CRV token per-user.
-            Effectively it calculates working balances to apply amplification
-            of CRV production by CRV
+    @notice Calculate working balances to apply amplification of CRV production.
     @param addr User address
     @param l User's amount of liquidity (LP tokens)
     @param L Total amount of liquidity (LP tokens)
@@ -408,6 +405,7 @@ def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool =
     @dev Depositting also claims pending reward tokens
     @param _value Number of tokens to deposit
     @param _addr Address to deposit for
+    @param _claim_rewards Whether to claim already accrued rewards
     """
     assert _addr != empty(address)  # dev: cannot deposit for zero address
     self._checkpoint(_addr)
@@ -486,6 +484,7 @@ def transferFrom(_from: address, _to :address, _value: uint256) -> bool:
      @param _from address The address which you want to send tokens from
      @param _to address The address which you want to transfer to
      @param _value uint256 the amount of tokens to be transferred
+     @return True if transfer passed
     """
     _allowance: uint256 = self.allowance[_from][msg.sender]
     if _allowance != max_value(uint256):
@@ -504,6 +503,7 @@ def transfer(_to: address, _value: uint256) -> bool:
     @dev Transferring claims pending reward tokens for the sender and receiver
     @param _to The address to transfer to.
     @param _value The amount to be transferred.
+    @return True if transfer passed
     """
     self._transfer(msg.sender, _to, _value)
 
@@ -823,6 +823,7 @@ def claimable_tokens(addr: address) -> uint256:
     """
     @notice Get the number of claimable tokens per user
     @dev This function should be manually changed to "view" in the ABI
+    @param addr User to check for
     @return uint256 number of claimable tokens per user
     """
     self._checkpoint(addr)
@@ -834,6 +835,7 @@ def claimable_tokens(addr: address) -> uint256:
 def integrate_checkpoint() -> uint256:
     """
     @notice Get the timestamp of the last checkpoint
+    @return uint256 Timestamp of the last checkpoint
     """
     return self.period_timestamp[self.period]
 
@@ -843,6 +845,7 @@ def integrate_checkpoint() -> uint256:
 def future_epoch_time() -> uint256:
     """
     @notice Get the locally stored CRV future epoch start time
+    @return uint256 Future epoch start time
     """
     return self.inflation_params >> 216
 
@@ -852,6 +855,7 @@ def future_epoch_time() -> uint256:
 def inflation_rate() -> uint256:
     """
     @notice Get the locally stored CRV inflation rate
+    @return uint256 Inflation rate
     """
     return self.inflation_params % 2 ** 216
 
@@ -872,6 +876,7 @@ def decimals() -> uint256:
 def version() -> String[8]:
     """
     @notice Get the version of this gauge contract
+    @return Version in x.x.x format
     """
     return VERSION
 
