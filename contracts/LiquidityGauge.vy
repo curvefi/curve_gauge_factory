@@ -446,11 +446,13 @@ def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool =
 
 @external
 @nonreentrant('lock')
-def withdraw(_value: uint256, _claim_rewards: bool = False):
+def withdraw(_value: uint256, _claim_rewards: bool = False, _receiver: address = msg.sender):
     """
     @notice Withdraw `_value` LP tokens
     @dev Withdrawing also claims pending reward tokens
     @param _value Number of tokens to withdraw
+    @param _claim_rewards Whether to claim rewards
+    @param _receiver Receiver of withdrawn LP tokens
     """
     self._checkpoint(msg.sender)
 
@@ -467,7 +469,7 @@ def withdraw(_value: uint256, _claim_rewards: bool = False):
 
         self._update_liquidity_limit(msg.sender, new_balance, total_supply)
 
-        ERC20(self.lp_token).transfer(msg.sender, _value)
+        ERC20(self.lp_token).transfer(_receiver, _value)
 
     log Withdraw(msg.sender, _value)
     log Transfer(msg.sender, empty(address), _value)
