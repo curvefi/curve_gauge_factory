@@ -456,8 +456,8 @@ def withdraw(_value: uint256, _claim_rewards: bool = False, _receiver: address =
 
         ERC20(self.lp_token).transfer(_receiver, _value)
 
-    log Withdraw(msg.sender, _value)
-    log Transfer(msg.sender, empty(address), _value)
+        log Withdraw(msg.sender, _value)
+        log Transfer(msg.sender, empty(address), _value)
 
 
 @external
@@ -871,7 +871,7 @@ def decimals() -> uint256:
     return 18
 
 
-@view
+@pure
 @external
 def version() -> String[8]:
     """
@@ -879,4 +879,3 @@ def version() -> String[8]:
     @return Version in x.x.x format
     """
     return VERSION
-
