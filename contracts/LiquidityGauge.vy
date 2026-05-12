@@ -62,6 +62,17 @@ event CommitOwnership:
 event ApplyOwnership:
     admin: address
 
+event AddReward:
+    reward: indexed(address)
+    index: uint256
+
+event SetDistributor:
+    reward: indexed(address)
+    distributor: address
+
+event SetKilled:
+    is_killed: bool
+
 event SetGaugeManager:
     _gauge_manager: address
 
@@ -176,6 +187,7 @@ def __init__(_lp_token: address):
     self.lp_token = _lp_token
     self.factory = msg.sender
     self.manager = tx.origin
+    log SetGaugeManager(tx.origin)
 
     symbol: String[32] = ERC20Extended(_lp_token).symbol()
     name: String[64] = concat("Curve.fi ", symbol, " Gauge Deposit")
@@ -760,6 +772,8 @@ def add_reward(_reward_token: address, _distributor: address):
     self.reward_data[_reward_token].distributor = _distributor
     self.reward_tokens[reward_count] = _reward_token
     self.reward_count = reward_count + 1
+    log AddReward(_reward_token, reward_count)
+    log SetDistributor(_reward_token, _distributor)
 
 
 @external
@@ -776,6 +790,7 @@ def set_reward_distributor(_reward_token: address, _distributor: address):
     assert _distributor != empty(address)
 
     self.reward_data[_reward_token].distributor = _distributor
+    log SetDistributor(_reward_token, _distributor)
 
 
 @external
@@ -788,6 +803,7 @@ def set_killed(_is_killed: bool):
     assert msg.sender == Factory(self.factory).admin()  # dev: only owner
 
     self.is_killed = _is_killed
+    log SetKilled(_is_killed)
 
 
 # View Methods
