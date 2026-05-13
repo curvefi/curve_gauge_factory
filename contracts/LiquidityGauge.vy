@@ -707,6 +707,7 @@ def deposit_reward_token(_reward_token: address, _amount: uint256, _epoch: uint2
 
 
 @external
+@nonreentrant
 def recover_remaining(_reward_token: address):
     """
     @notice Recover reward token remaining after calculation errors. Helpful for small decimal tokens.
