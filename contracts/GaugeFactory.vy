@@ -60,7 +60,7 @@ def deploy_gauge(_lp_token: address, _manager: address = msg.sender) -> address:
 
     gauge: address = create_from_blueprint(
         implementation,
-        _pool,
+        _pool, _manager,
         code_offset=3,
     )
 

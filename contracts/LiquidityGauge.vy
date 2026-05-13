@@ -170,15 +170,15 @@ integrate_inv_supply: public(uint256[100000000000000000000000000000])  # bump ep
 
 
 @external
-def __init__(_lp_token: address):
+def __init__(_lp_token: address, _manager: address):
     """
     @notice Contract constructor
     @param _lp_token Liquidity Pool contract address
     """
     lp_token = ERC20(_lp_token)
     self.factory = Factory(msg.sender)
-    self.manager = tx.origin
-    log SetGaugeManager(tx.origin)
+    self.manager = _manager
+    log SetGaugeManager(_manager)
 
     symbol: String[32] = ERC20Extended(_lp_token).symbol()
     name: String[64] = concat("Curve.fi ", symbol, " Gauge Deposit")
