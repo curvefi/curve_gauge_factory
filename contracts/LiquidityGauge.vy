@@ -710,7 +710,7 @@ def deposit_reward_token(_reward_token: address, _amount: uint256, _epoch: uint2
 
 
 @external
-@nonreentrant
+@nonreentrant("lock")
 def recover_remaining(_reward_token: address):
     """
     @notice Recover reward token remaining after calculation errors. Helpful for small decimal tokens.
@@ -737,7 +737,7 @@ def add_reward(_reward_token: address, _distributor: address):
     """
     assert msg.sender in [self.manager, self.factory.admin()]  # dev: only manager or factory admin
     assert _distributor != empty(address)  # dev: distributor cannot be zero address
-    assert _reward_token not in [empty(address), self, lp_token]  # dev: can not distinguish CRV reward from CRV emission; do not use gauge token as reward token
+    assert _reward_token not in [empty(address), self, lp_token.address]  # dev: can not distinguish CRV reward from CRV emission; do not use gauge token as reward token
 
     reward_count: uint256 = self.reward_count
     assert reward_count < MAX_REWARDS

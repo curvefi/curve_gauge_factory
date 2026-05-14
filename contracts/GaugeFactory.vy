@@ -30,13 +30,12 @@ get_implementation: public(address)
 owner: public(address)
 future_owner: public(address)
 
-
+# gauge -> [is_valid]
 gauge_data: public(HashMap[address, uint256])
-# user -> gauge -> value
 
 get_gauge_from_lp_token: public(HashMap[address, address])
 get_gauge_count: public(uint256)
-get_gauge: public(address[MAX_INT128])
+get_gauge: public(address[max_value(int128)])
 
 
 @external
@@ -51,7 +50,7 @@ def deploy_gauge(_lp_token: address, _manager: address = msg.sender) -> address:
     @param _lp_token The token to deposit in the gauge
     @param _manager The address to set as manager of the gauge
     """
-    if self.get_gauge_from_lp_token[_lp_token] != ZERO_ADDRESS:
+    if self.get_gauge_from_lp_token[_lp_token] != empty(address):
         # overwriting lp_token -> gauge mapping requires
         assert msg.sender == self.owner  # dev: only owner
 
@@ -60,7 +59,7 @@ def deploy_gauge(_lp_token: address, _manager: address = msg.sender) -> address:
 
     gauge: address = create_from_blueprint(
         implementation,
-        _pool, _manager,
+        _lp_token, _manager,
         code_offset=3,
     )
 
