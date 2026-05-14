@@ -102,6 +102,8 @@ EIP2612_TYPEHASH: constant(bytes32) = keccak256("Permit(address owner,address sp
 ERC1271_MAGIC_VAL: constant(bytes32) = 0x1626ba7e00000000000000000000000000000000000000000000000000000000
 
 salt: public(immutable(bytes32))
+# @notice Get the EIP-712 domain separator used for permit signatures
+# @return bytes32 Domain separator hash
 DOMAIN_SEPARATOR: public(immutable(bytes32))
 
 CRV: constant(address) = 0xD533a949740bb3306d119CC777fa900bA034cd52
@@ -174,6 +176,7 @@ def __init__(_lp_token: address, _manager: address):
     """
     @notice Contract constructor
     @param _lp_token Liquidity Pool contract address
+    @param _manager The address to set as manager of the gauge
     """
     lp_token = ERC20(_lp_token)
     self.factory = Factory(msg.sender)
@@ -768,7 +771,8 @@ def set_reward_distributor(_reward_token: address, _distributor: address):
 def set_killed(_is_killed: bool):
     """
     @notice Set the killed status for this contract
-    @dev When killed, the gauge always yields a rate of 0 and so cannot mint CRV
+    @dev When killed, the gauge always yields a rate of 0 and so cannot mint CRV.
+        Not meant to be unkilled.
     @param _is_killed Killed status to set
     """
     assert msg.sender == self.factory.admin()  # dev: only owner
