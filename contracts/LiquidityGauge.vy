@@ -1,12 +1,11 @@
 # pragma version 0.3.10
 # pragma optimize gas
-# pragma evm-version shanghai
 """
 @title CurveLiquidityGauge
-@author Curve.Fi
-@license Copyright (c) Curve.Fi, 2020-2023 - all rights reserved
+@author Curve Finance
+@license Copyright (c) Curve.Fi, 2020-2026 - all rights reserved
 @notice Implementation contract for use with Curve Factory
-@dev Differs from v5.0.0 in that it uses create_from_blueprint to deploy Gauges
+@custom:version 6.1.1
 """
 from vyper.interfaces import ERC20
 
