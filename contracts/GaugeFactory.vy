@@ -9,15 +9,18 @@
 @dev Differs from v5.0.0 in that it uses create_from_blueprint to deploy Gauges
 """
 
+
 event DeployedGauge:
     _implementation: indexed(address)
     _lp_token: indexed(address)
     _deployer: indexed(address)
     _gauge: address
 
+
 event UpdateImplementation:
     _old_implementation: address
     _new_implementation: address
+
 
 event TransferOwnership:
     _old_owner: address
@@ -59,7 +62,8 @@ def deploy_gauge(_lp_token: address, _manager: address = msg.sender) -> address:
 
     gauge: address = create_from_blueprint(
         implementation,
-        _lp_token, _manager,
+        _lp_token,
+        _manager,
         code_offset=3,
     )
 
