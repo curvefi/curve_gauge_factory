@@ -109,7 +109,14 @@ MAX_REWARDS: constant(uint256) = 8
 TOKENLESS_PRODUCTION: constant(uint256) = 40
 WEEK: constant(uint256) = 604800
 
-# updated from v6.1.0: TODO
+# Updated from v6.1.0:
+# - constructor now takes `_manager` explicitly instead of using `tx.origin`
+# - ERC1271 permit support is enabled
+# - reward precision carry accounting is added via `reward_remaining`
+# - `recover_remaining()` is added for post-distribution reward dust recovery
+# - `withdraw()` supports a custom `_receiver`
+# - EIP-712 domain typehash is aligned with the salted domain separator
+# - `decimals()` now returns `uint8` and `version()` is `@pure`
 VERSION: constant(String[8]) = "v6.1.1"
 
 EIP712_TYPEHASH: constant(bytes32) = keccak256(
