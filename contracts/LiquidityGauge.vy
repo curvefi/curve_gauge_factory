@@ -31,7 +31,7 @@ interface ERC1271:
 
 
 interface Factory:
-    def admin() -> address: view
+    def owner() -> address: view
 
 
 interface Minter:
@@ -708,7 +708,7 @@ def set_gauge_manager(_gauge_manager: address):
         method, but only for the gauge which they are the manager of.
     @param _gauge_manager The account to set as the new manager of the gauge.
     """
-    assert msg.sender in [self.manager, self.factory.admin()]  # dev: only manager or factory admin
+    assert msg.sender in [self.manager, self.factory.owner()]  # dev: only manager or factory admin
 
     self.manager = _gauge_manager
     log SetGaugeManager(_gauge_manager)
@@ -770,7 +770,7 @@ def add_reward(_reward_token: address, _distributor: address):
     @param _reward_token The token to add as an additional reward
     @param _distributor Address permitted to fund this contract with the reward token
     """
-    assert msg.sender in [self.manager, self.factory.admin()]  # dev: only manager or factory admin
+    assert msg.sender in [self.manager, self.factory.owner()]  # dev: only manager or factory admin
     assert _distributor != empty(address)  # dev: distributor cannot be zero address
     assert _reward_token not in [
         empty(address), self, lp_token.address
@@ -796,7 +796,7 @@ def set_reward_distributor(_reward_token: address, _distributor: address):
     """
     current_distributor: address = self.reward_data[_reward_token].distributor
 
-    assert msg.sender in [current_distributor, self.factory.admin(), self.manager]
+    assert msg.sender in [current_distributor, self.factory.owner(), self.manager]
     assert current_distributor != empty(address)
     assert _distributor != empty(address)
 
@@ -812,7 +812,7 @@ def set_killed(_is_killed: bool):
         Not meant to be unkilled.
     @param _is_killed Killed status to set
     """
-    assert msg.sender == self.factory.admin()  # dev: only owner
+    assert msg.sender == self.factory.owner()  # dev: only owner
 
     self.is_killed = _is_killed
     log SetKilled(_is_killed)
