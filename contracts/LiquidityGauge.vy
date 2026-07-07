@@ -774,7 +774,7 @@ def add_reward(_reward_token: address, _distributor: address):
     assert _distributor != empty(address)  # dev: distributor cannot be zero address
     assert _reward_token not in [
         empty(address), self, lp_token.address
-    ]  # dev: can not distinguish CRV reward from CRV emission; do not use gauge token as reward token
+    ]
 
     reward_count: uint256 = self.reward_count
     assert reward_count < MAX_REWARDS
