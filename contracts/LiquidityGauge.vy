@@ -734,6 +734,7 @@ def deposit_reward_token(_reward_token: address, _amount: uint256, _epoch: uint2
     amount_received = ERC20(_reward_token).balanceOf(self) - amount_received
 
     total_amount: uint256 = self.reward_remaining[_reward_token] + amount_received
+    assert total_amount <= 2 ** (64 + 32), "Reward overflow"
     self.reward_data[_reward_token].rate = total_amount / _epoch
     self.reward_remaining[_reward_token] = total_amount
 
