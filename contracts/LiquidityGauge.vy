@@ -83,6 +83,10 @@ event SetGaugeManager:
     _gauge_manager: address
 
 
+event RewardInvalidated:
+    token: indexed(address)
+
+
 event Transfer:
     _from: indexed(address)
     _to: indexed(address)
@@ -164,6 +168,7 @@ inflation_params: uint256
 # For tracking external rewards
 reward_count: public(uint256)
 reward_data: public(HashMap[address, Reward])
+invalidated_reward: public(HashMap[address, bool])
 reward_remaining: public(HashMap[address, uint256])  # fixes bad precision
 
 # claimant -> default reward receiver
@@ -336,6 +341,8 @@ def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _r
         if i == reward_count:
             break
         token: address = self.reward_tokens[i]
+        if self.invalidated_reward[token]:
+            continue
 
         integral: uint256 = self.reward_data[token].integral
         period_finish: uint256 = self.reward_data[token].period_finish
@@ -700,6 +707,16 @@ def kick(addr: address):
 
 
 @external
+def invalidate_reward(_reward_token: address):
+    assert msg.sender == self.factory.owner()  # dev: only factory admin
+    assert self.reward_data[_reward_token].distributor != empty(address)
+    assert not self.invalidated_reward[_reward_token]
+
+    self.invalidated_reward[_reward_token] = True
+    log RewardInvalidated(_reward_token)
+
+
+@external
 def set_gauge_manager(_gauge_manager: address):
     """
     @notice Change the gauge manager for a gauge
@@ -724,6 +741,7 @@ def deposit_reward_token(_reward_token: address, _amount: uint256, _epoch: uint2
     @param _epoch The duration the rewards are distributed across. Between 3 days and a year, week by default
     """
     assert msg.sender == self.reward_data[_reward_token].distributor
+    assert not self.invalidated_reward[_reward_token]
     assert 3 * WEEK / 7 <= _epoch and _epoch <= WEEK * 4 * 12, "Epoch duration"
 
     self._checkpoint_rewards(empty(address), self.totalSupply, False, empty(address))
@@ -843,6 +861,8 @@ def claimable_reward(_user: address, _reward_token: address) -> uint256:
     @param _reward_token Token to get reward amount for
     @return uint256 Claimable reward token amount
     """
+    if self.invalidated_reward[_reward_token]:
+        return 0
     integral: uint256 = self.reward_data[_reward_token].integral
     total_supply: uint256 = self.totalSupply
     if total_supply != 0:
